@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="12" fill="#0A1E3F"/>
+  <g transform="translate(32 32)" fill="none" stroke="#C6A15B" stroke-width="1.6">
+    <circle r="21" opacity="0.55"/>
+    <circle r="15" opacity="0.35"/>
+  </g>
+  <!-- compass rose: N/S long points (brass), E/W (light) -->
+  <g transform="translate(32 32)">
+    <polygon points="0,-24 4.5,0 0,24 -4.5,0" fill="#D8B978"/>
+    <polygon points="0,-24 -4.5,0 0,0" fill="#C6A15B"/>
+    <polygon points="-24,0 0,4.5 24,0 0,-4.5" fill="#F5F7FA"/>
+    <polygon points="24,0 0,4.5 0,0" fill="#cdd6e2"/>
+    <circle r="2.4" fill="#0A1E3F" stroke="#D8B978" stroke-width="1.4"/>
+  </g>
+</svg>

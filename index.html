@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Regatta-Zeitmessung — Segelkameradschaft Buchholz e.V.</title>
+  <meta name="description" content="Boot anmelden, Start und Ziel per Fingertipp erfassen, Wertung nach Yardstick live verfolgen — für die Dreieckskurs-Regatten der Segelkameradschaft Buchholz vor Fehmarn.">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Figtree:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --navy-900:#0a1e3f; --navy-800:#10294f;
+      --brass:#c6a15b; --brass-bright:#dcbd7e; --brass-deep:#a5823f;
+      --paper:#f4f6fa; --white:#fff; --ink:#14243d; --slate:#57687f; --line:rgba(20,36,61,.12);
+      --on-navy:#e9eef6; --on-navy-dim:#a9b8ce;
+      --font-display:'Fraunces',Georgia,serif; --font-body:'Figtree',-apple-system,sans-serif; --font-mono:'Space Mono',ui-monospace,monospace;
+      --race-green:#2f8f46; --race-green-deep:#1f6631; --race-red:#c1443a; --race-red-deep:#8f2f28; --race-gold-row:#fbf3de;
+      --shadow-sm:0 1px 2px rgba(10,30,63,.05), 0 6px 16px -8px rgba(10,30,63,.14);
+      --shadow-md:0 14px 28px -14px rgba(10,30,63,.3);
+    }
+    *{ box-sizing:border-box; }
+    body{ margin:0; background:var(--paper); color:var(--ink); font-family:var(--font-body); line-height:1.6; }
+    a{ color:inherit; }
+    h1,h2{ font-family:var(--font-display); margin:0; }
+    .wrap{ max-width:640px; margin:0 auto; padding-inline:1.2rem; }
+
+    header.top{ background:linear-gradient(155deg, var(--navy-900), var(--navy-800)); color:var(--on-navy); padding:1.6rem 0 1.4rem; }
+    header.top .row{ display:flex; align-items:center; gap:.8rem; }
+    header.top img{ width:38px; height:38px; border-radius:6px; }
+    header.top .brand{ font-family:var(--font-display); font-weight:600; font-size:1.05rem; line-height:1.15; }
+    header.top .brand small{ display:block; font-family:var(--font-mono); font-size:.62rem; letter-spacing:.16em; text-transform:uppercase; color:var(--brass-bright); margin-top:2px; }
+    header.top h1{ font-size:1.55rem; margin-top:1rem; }
+    header.top p{ margin:.5rem 0 0; color:var(--on-navy-dim); font-size:.95rem; max-width:48ch; }
+    header.top .back{ font-size:.8rem; color:var(--brass-bright); text-decoration:none; }
+    header.top .back:hover{ text-decoration:underline; }
+
+    .notice{ background:#fbf3de; border:1px solid var(--brass); border-radius:8px; padding:.9rem 1.1rem; font-size:.86rem; line-height:1.5; margin:1.4rem 0; }
+    .notice b{ color:var(--brass-deep); }
+    .offline{ display:none; background:var(--race-red-deep); color:#fff; border-radius:8px; padding:.7rem 1rem; font-size:.82rem; margin-bottom:1.2rem; align-items:center; gap:.6rem; }
+    .offline.show{ display:flex; }
+
+    .tabs{ display:flex; gap:.5rem; margin:1.2rem 0 1.4rem; position:sticky; top:0; z-index:5; background:var(--paper); padding-top:.4rem; }
+    .tabs button{ flex:1; background:var(--white); border:1px solid var(--line); border-radius:8px; padding:.65rem .4rem; font-family:var(--font-body); font-weight:700; font-size:.86rem; color:var(--navy-900); cursor:pointer; box-shadow:var(--shadow-sm); }
+    .tabs button.active{ background:var(--navy-900); color:#fff; border-color:var(--navy-900); }
+
+    .view{ display:none; padding-bottom:3rem; } .view.active{ display:block; }
+    .card{ background:var(--white); border:1px solid var(--line); border-radius:10px; padding:1.4rem; margin-bottom:1.4rem; box-shadow:var(--shadow-sm); }
+    .card h2{ font-size:1.15rem; margin-bottom:.3rem; }
+    .card .hint{ font-size:.84rem; color:var(--slate); margin-bottom:1rem; }
+    label{ display:block; font-family:var(--font-mono); font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; color:var(--slate); margin:.8rem 0 .35rem; }
+    input[type=text], input[type=number]{ width:100%; padding:.65rem .75rem; border:1px solid var(--line); border-radius:7px; font-size:1rem; font-family:var(--font-body); background:var(--paper); color:var(--ink); }
+    input:focus{ outline:none; border-color:var(--brass); box-shadow:0 0 0 3px rgba(198,161,91,.18); }
+
+    .btn{ display:inline-block; padding:.7rem 1.1rem; border-radius:8px; border:1px solid transparent; font-weight:700; font-size:.9rem; cursor:pointer; font-family:var(--font-body); }
+    .btn-primary{ background:var(--brass); color:var(--navy-900); width:100%; text-align:center; margin-top:1rem; }
+    .btn-primary:disabled{ background:#c9cdd6; color:#6b6f78; cursor:not-allowed; }
+    .btn-ghost{ background:none; border-color:var(--line); color:var(--navy-900); width:100%; text-align:center; }
+
+    .boat-list{ display:flex; flex-direction:column; gap:.55rem; max-height:280px; overflow-y:auto; margin-top:.3rem; }
+    .boat-row{ display:flex; justify-content:space-between; align-items:center; gap:.6rem; padding:.6rem .75rem; background:var(--paper); border:1px solid var(--line); border-radius:8px; }
+    .boat-row .name{ font-weight:700; } .boat-row .meta{ font-size:.76rem; color:var(--slate); font-family:var(--font-mono); }
+
+    .pick-row{ display:flex; justify-content:space-between; align-items:center; gap:.6rem; padding:.7rem .85rem; border:1px solid var(--line); border-radius:8px; margin-bottom:.5rem; cursor:pointer; background:var(--paper); }
+    .pick-row:hover{ border-color:var(--brass); } .pick-row.selected{ border-color:var(--brass); background:#fbf3de; }
+    .chip-row{ display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.3rem; }
+    .chip{ flex:1; min-width:44px; text-align:center; padding:.8rem 0; border-radius:8px; border:1px solid var(--line); background:var(--paper); font-weight:800; font-family:var(--font-mono); cursor:pointer; color:var(--navy-900); }
+    .chip.selected{ background:var(--navy-900); color:#fff; border-color:var(--navy-900); }
+    .summary{ background:#fbf3de; border:1px solid var(--brass); border-radius:8px; padding:.7rem .9rem; margin-top:1rem; font-size:.88rem; }
+
+    .timer{ background:radial-gradient(135% 130% at 12% 0%, #12294f 0%, #0a1e3f 58%); border-radius:10px; padding:1.8rem 1.2rem; color:var(--on-navy); text-align:center; box-shadow:var(--shadow-md); }
+    .timer .boat-line{ font-size:.84rem; color:var(--on-navy-dim); }
+    .timer .boat-line b{ display:block; font-family:var(--font-display); color:#fff; font-size:1.3rem; margin-top:.2rem; }
+    .big-btn{ width:100%; padding:2.1rem 0; border-radius:12px; border:none; font-size:1.3rem; font-family:var(--font-body); font-weight:800; color:#fff; margin-top:1.1rem; cursor:pointer; letter-spacing:.05em; box-shadow:0 8px 20px -6px rgba(0,0,0,.4); }
+    .big-btn.green{ background:linear-gradient(180deg, var(--race-green), var(--race-green-deep)); }
+    .big-btn.red{ background:linear-gradient(180deg, var(--race-red), var(--race-red-deep)); }
+    .big-btn:disabled{ background:#5b6472; box-shadow:none; cursor:not-allowed; opacity:.55; }
+    .readout{ font-family:var(--font-mono); font-size:.82rem; color:var(--on-navy-dim); margin-top:.7rem; min-height:1.2em; }
+
+    .table-wrap{ overflow-x:auto; }
+    table{ width:100%; border-collapse:collapse; font-size:.86rem; }
+    th,td{ text-align:left; padding:.6rem .5rem; border-bottom:1px solid var(--line); }
+    th{ font-family:var(--font-mono); font-size:.66rem; letter-spacing:.08em; text-transform:uppercase; color:var(--slate); }
+    td.num, th.num{ text-align:right; font-variant-numeric:tabular-nums; font-family:var(--font-mono); }
+    tr.place-1{ background:var(--race-gold-row); }
+    .badge{ display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--navy-900); color:#fff; font-size:.7rem; font-weight:800; font-family:var(--font-mono); }
+    .badge.gold{ background:var(--brass); color:#2b1c04; } .badge.silver{ background:#9aa1ab; color:#1a1a1a; } .badge.bronze{ background:#a86a3d; color:#2b1503; }
+    .run-tabs{ display:flex; gap:.4rem; margin-bottom:1rem; flex-wrap:wrap; }
+    .run-tabs button{ flex:1; min-width:70px; padding:.5rem 0; border-radius:7px; border:1px solid var(--line); background:var(--paper); font-weight:700; font-size:.78rem; cursor:pointer; color:var(--navy-900); font-family:var(--font-body); }
+    .run-tabs button.active{ background:var(--navy-900); color:#fff; border-color:var(--navy-900); }
+    .empty{ color:var(--slate); font-size:.88rem; text-align:center; padding:1.4rem 0; }
+    .toast{ position:fixed; bottom:1.2rem; left:50%; transform:translateX(-50%); background:var(--navy-900); color:#fff; padding:.6rem 1.1rem; border-radius:20px; font-size:.85rem; box-shadow:var(--shadow-md); z-index:80; opacity:0; transition:opacity .25s; pointer-events:none; max-width:90%; text-align:center; }
+    .toast.show{ opacity:1; }
+    footer.bottom{ text-align:center; padding:2rem 0 3rem; font-size:.8rem; color:var(--slate); }
+    footer.bottom a{ color:var(--navy-900); font-weight:600; }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <div class="row">
+        <img src="logo.png" alt="" onerror="this.style.display='none'">
+        <div class="brand">Segelkameradschaft Buchholz e.V.<small>Segelverein &middot; seit 1988</small></div>
+      </div>
+      <h1>⛵ Regatta-Zeitmessung</h1>
+      <p>Boot anmelden, Start &amp; Ziel per Fingertipp erfassen, Wertung nach Yardstick live verfolgen — Dreieckskurs vor Fehmarn.</p>
+      <p style="margin-top:.8rem"><a class="back" href="https://segelkameradschaft-buchholz.de/">← Zur Hauptseite der SKB</a></p>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="notice"><b>So funktioniert's:</b> Jeder Skipper meldet sein Boot einmal an und erfasst Start/Ziel selbst — die Zeit wird server-seitig gestempelt, damit unterschiedliche Handy-Uhren keine Rolle spielen. Die Wertung aktualisiert sich automatisch für alle.</div>
+    <div class="offline" id="raceOffline">⚓ Kein Netz — deine Zeit ist lokal gespeichert und wird automatisch nachgereicht, sobald wieder Empfang da ist.</div>
+
+    <div class="tabs">
+      <button id="tab-boote" class="active">Boote</button>
+      <button id="tab-start">Start / Ziel</button>
+      <button id="tab-wertung">Wertung</button>
+    </div>
+
+    <section id="view-boote" class="view active">
+      <div class="card">
+        <h2>Boot anmelden</h2>
+        <p class="hint">Name, Typ und Yardstickzahl — einmal pro Boot, für den ganzen Regattatag.</p>
+        <label for="r-name">Bootsname</label>
+        <input id="r-name" type="text" placeholder="z. B. Klabautermann" maxlength="80">
+        <label for="r-typ">Bootstyp</label>
+        <input id="r-typ" type="text" placeholder="z. B. X-95" maxlength="80">
+        <label for="r-ys">Yardstickzahl</label>
+        <input id="r-ys" type="number" step="0.1" min="1" max="400" placeholder="z. B. 105">
+        <button class="btn btn-primary" id="rAddBoat">Boot registrieren</button>
+      </div>
+      <div class="card">
+        <h2>Gemeldete Boote (<span id="rBoatCount">0</span>)</h2>
+        <div id="rBoatList" class="boat-list"><div class="empty">Noch keine Boote gemeldet.</div></div>
+      </div>
+    </section>
+
+    <section id="view-start" class="view">
+      <div class="card" id="rPickCard">
+        <h2>Boot &amp; Durchlauf wählen</h2>
+        <p class="hint">Suche dein Boot, wähle den Durchlauf, bestätige.</p>
+        <label for="r-search">Boot suchen</label>
+        <input id="r-search" type="text" placeholder="Bootsnamen eingeben…">
+        <div id="rPickList" class="boat-list" style="margin-top:.4rem"></div>
+        <label>Durchlauf</label>
+        <div class="chip-row" id="rChipRow"></div>
+        <div id="rSelSummary" class="summary" style="display:none"></div>
+        <button class="btn btn-primary" id="rConfirmSel" disabled>Bestätigen</button>
+      </div>
+      <div class="timer" id="rTimerCard" style="display:none">
+        <div class="boat-line">Durchlauf <span id="rTRun"></span><b id="rTBoat"></b></div>
+        <button class="big-btn green" id="rStartBtn">START</button>
+        <button class="big-btn red" id="rFinishBtn" disabled>ZIEL</button>
+        <div class="readout" id="rReadout"></div>
+        <button class="btn btn-ghost" id="rBackToPick" style="margin-top:1.3rem;color:#fff;border-color:rgba(255,255,255,.35)">Anderes Boot / Durchlauf</button>
+      </div>
+    </section>
+
+    <section id="view-wertung" class="view">
+      <div class="card">
+        <h2 id="rEventTitle">Wertung</h2>
+        <p class="hint">Wertungszeit = Fahrzeit × Yardstickzahl ÷ 1000 — kleinste Zeit gewinnt.</p>
+        <div class="run-tabs" id="rRunTabs"></div>
+        <div class="table-wrap" id="rAdminTable"><div class="empty">Noch keine Zeiten erfasst.</div></div>
+        <p class="hint" style="margin-top:1rem">„Gesamt" summiert die Wertungszeiten aller Durchläufe, die ein Boot beendet hat.</p>
+      </div>
+    </section>
+  </div>
+
+  <footer class="bottom">© 2026 Segelkameradschaft Buchholz e.V. · <a href="https://segelkameradschaft-buchholz.de/">segelkameradschaft-buchholz.de</a></footer>
+
+  <div class="toast" id="rToast"></div>
+
+  <script>
+  (function(){
+    "use strict";
+    var QUEUE_KEY = 'skb_regatta_pending_v1';
+    var currentData = { event:{name:'Regatta', datum:'', kurse:3}, boote:[], durchlaeufe:[] };
+    var pending = [];
+    var currentPick = { boatId:null, run:null };
+    var activeStart = null;
+    var adminRunTab = '1';
+
+    function $(sel, root){ return (root||document).querySelector(sel); }
+    function $all(sel, root){ return Array.prototype.slice.call((root||document).querySelectorAll(sel)); }
+    function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+    function toast(msg){
+      var t = $('#rToast'); t.textContent = msg; t.classList.add('show');
+      clearTimeout(toast._h); toast._h = setTimeout(function(){ t.classList.remove('show'); }, 2400);
+    }
+
+    function loadQueue(){ try { var raw = localStorage.getItem(QUEUE_KEY); pending = raw ? JSON.parse(raw) : []; } catch(e){ pending = []; } }
+    function saveQueue(){ try { localStorage.setItem(QUEUE_KEY, JSON.stringify(pending)); } catch(e){} $('#raceOffline').classList.toggle('show', pending.length > 0); }
+
+    function apiPost(action, payload){
+      var body = Object.assign({ action: action }, payload);
+      return fetch('api.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
+        .then(function(r){ return r.json().then(function(j){ return { httpOk:r.ok, body:j }; }); });
+    }
+
+    function queueAction(action, payload){ pending.push({ action:action, payload:payload, ts:Date.now() }); saveQueue(); flushQueue(); }
+
+    var flushing = false;
+    function flushQueue(){
+      if (flushing || pending.length === 0) return;
+      flushing = true;
+      var item = pending[0];
+      apiPost(item.action, item.payload).then(function(res){
+        pending.shift(); saveQueue(); flushing = false;
+        if (!res.body.ok && res.httpOk) toast('Hinweis: ' + res.body.error);
+        loadData(true);
+        if (pending.length > 0) flushQueue();
+      }).catch(function(){ flushing = false; });
+    }
+
+    function loadData(silent){
+      return fetch('data/regatta.json', { cache:'no-store' })
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(d){ if (d && typeof d === 'object') currentData = d; renderAll(); })
+        .catch(function(){ if (!silent) toast('Konnte aktuelle Daten nicht laden.'); });
+    }
+
+    function renderAll(){ renderBoatList(); renderPickList(); renderEventTitle(); renderAdmin(); }
+
+    function renderEventTitle(){
+      var ev = currentData.event || {};
+      $('#rEventTitle').textContent = (ev.name || 'Wertung') + (ev.datum ? ' — ' + ev.datum.split('-').reverse().join('.') : '');
+      var tabs = $('#rRunTabs');
+      var n = Math.max(1, Math.min(6, parseInt(ev.kurse,10) || 3));
+      var html = '';
+      for (var i=1;i<=n;i++) html += '<button data-run="'+i+'" class="'+(String(i)===adminRunTab?'active':'')+'">Durchlauf '+i+'</button>';
+      html += '<button data-run="gesamt" class="'+(adminRunTab==='gesamt'?'active':'')+'">Gesamt</button>';
+      tabs.innerHTML = html;
+      $all('button', tabs).forEach(function(btn){
+        btn.addEventListener('click', function(){
+          adminRunTab = btn.dataset.run;
+          $all('button', tabs).forEach(function(b){ b.classList.toggle('active', b===btn); });
+          renderAdmin();
+        });
+      });
+      var chipRow = $('#rChipRow');
+      if (chipRow.dataset.n !== String(n)) {
+        var chipHtml = '';
+        for (var j=1;j<=n;j++) chipHtml += '<div class="chip" data-run="'+j+'">'+j+'</div>';
+        chipRow.innerHTML = chipHtml;
+        chipRow.dataset.n = String(n);
+        $all('.chip', chipRow).forEach(function(chip){
+          chip.addEventListener('click', function(){
+            currentPick.run = chip.dataset.run;
+            $all('.chip', chipRow).forEach(function(c){ c.classList.toggle('selected', c===chip); });
+            updateConfirmState();
+          });
+        });
+      }
+    }
+
+    var navMap = { boote:$('#tab-boote'), start:$('#tab-start'), wertung:$('#tab-wertung') };
+    var viewMap = { boote:$('#view-boote'), start:$('#view-start'), wertung:$('#view-wertung') };
+    function switchView(name){
+      Object.keys(viewMap).forEach(function(k){ viewMap[k].classList.toggle('active', k===name); navMap[k].classList.toggle('active', k===name); });
+      if (name === 'start') resetPickView();
+      loadData(true);
+    }
+    navMap.boote.addEventListener('click', function(){ switchView('boote'); });
+    navMap.start.addEventListener('click', function(){ switchView('start'); });
+    navMap.wertung.addEventListener('click', function(){ switchView('wertung'); });
+
+    $('#rAddBoat').addEventListener('click', function(){
+      var name = $('#r-name').value.trim(), typ = $('#r-typ').value.trim(), ys = parseFloat($('#r-ys').value);
+      if (!name || !typ || !ys) { toast('Bitte Name, Typ und Yardstickzahl ausfüllen.'); return; }
+      apiPost('register_boot', { name:name, typ:typ, yardstick:ys }).then(function(res){
+        if (res.body.ok) { $('#r-name').value=''; $('#r-typ').value=''; $('#r-ys').value=''; toast('„'+name+'" registriert.'); loadData(true); }
+        else toast(res.body.error || 'Registrierung fehlgeschlagen.');
+      }).catch(function(){ toast('Kein Netz — bitte gleich erneut versuchen (Registrierung braucht eine Verbindung).'); });
+    });
+
+    function renderBoatList(){
+      var wrap = $('#rBoatList'); $('#rBoatCount').textContent = currentData.boote.length;
+      if (currentData.boote.length === 0) { wrap.innerHTML = '<div class="empty">Noch keine Boote gemeldet.</div>'; return; }
+      wrap.innerHTML = currentData.boote.map(function(b){
+        return '<div class="boat-row"><div><div class="name">'+esc(b.name)+'</div><div class="meta">'+esc(b.typ)+' · YS '+esc(b.yardstick)+'</div></div></div>';
+      }).join('');
+    }
+
+    $('#r-search').addEventListener('input', renderPickList);
+    function renderPickList(){
+      var q = $('#r-search').value.trim().toLowerCase();
+      var wrap = $('#rPickList');
+      var matches = currentData.boote.filter(function(b){ return !q || b.name.toLowerCase().indexOf(q) !== -1; });
+      if (matches.length === 0) { wrap.innerHTML = currentData.boote.length === 0 ? '<div class="empty">Erst unter „Boote" registrieren.</div>' : '<div class="empty">Kein Treffer.</div>'; return; }
+      wrap.innerHTML = matches.map(function(b){
+        return '<div class="pick-row '+(currentPick.boatId===b.id?'selected':'')+'" data-boat="'+esc(b.id)+'"><div><span class="name">'+esc(b.name)+'</span> <span class="meta">'+esc(b.typ)+' · YS '+esc(b.yardstick)+'</span></div>'+(currentPick.boatId===b.id?'<span>✓</span>':'')+'</div>';
+      }).join('');
+      $all('.pick-row', wrap).forEach(function(el){
+        el.addEventListener('click', function(){ currentPick.boatId = el.dataset.boat; renderPickList(); updateConfirmState(); });
+      });
+    }
+
+    function updateConfirmState(){
+      var btn = $('#rConfirmSel'), summary = $('#rSelSummary');
+      if (currentPick.boatId && currentPick.run) {
+        var b = currentData.boote.find(function(x){ return x.id === currentPick.boatId; });
+        if (!b) { btn.disabled = true; return; }
+        summary.style.display = 'block';
+        summary.innerHTML = '<b>'+esc(b.name)+'</b> ('+esc(b.typ)+', YS '+esc(b.yardstick)+') — Durchlauf '+esc(currentPick.run);
+        btn.disabled = false;
+      } else { summary.style.display = 'none'; btn.disabled = true; }
+    }
+    $('#rConfirmSel').addEventListener('click', function(){ openTimer(currentPick.boatId, currentPick.run); });
+
+    function resetPickView(){
+      $('#rPickCard').style.display = 'block'; $('#rTimerCard').style.display = 'none';
+      currentPick = { boatId:null, run:null }; $('#r-search').value = '';
+      $all('.chip').forEach(function(c){ c.classList.remove('selected'); });
+      renderPickList(); updateConfirmState();
+    }
+    $('#rBackToPick').addEventListener('click', resetPickView);
+
+    function findEintrag(boatId, run){
+      var fromServer = currentData.durchlaeufe.find(function(d){ return d.boot_id===boatId && d.durchlauf===String(run); });
+      var pendingStart = pending.find(function(p){ return p.action==='start' && p.payload.boot_id===boatId && p.payload.durchlauf===String(run); });
+      var pendingFinish = pending.find(function(p){ return p.action==='finish' && p.payload.boot_id===boatId && p.payload.durchlauf===String(run); });
+      return {
+        hasStart: !!(fromServer && fromServer.start_server) || !!pendingStart,
+        hasFinish: !!(fromServer && fromServer.ziel_server) || !!pendingFinish,
+        startClient: pendingStart ? pendingStart.payload.client_time : (fromServer ? fromServer.start_client : null),
+        finishClient: pendingFinish ? pendingFinish.payload.client_time : (fromServer ? fromServer.ziel_client : null),
+        startPending: !!pendingStart, finishPending: !!pendingFinish
+      };
+    }
+    function fmtClock(ms){ if (!ms) return ''; return new Date(ms).toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+
+    function openTimer(boatId, run){
+      var b = currentData.boote.find(function(x){ return x.id === boatId; });
+      if (!b) { toast('Boot nicht gefunden — bitte neu laden.'); return; }
+      activeStart = { boatId:boatId, run:String(run) };
+      $('#rPickCard').style.display = 'none'; $('#rTimerCard').style.display = 'block';
+      $('#rTRun').textContent = run; $('#rTBoat').textContent = b.name;
+      refreshTimerButtons();
+    }
+    function refreshTimerButtons(){
+      if (!activeStart) return;
+      var e = findEintrag(activeStart.boatId, activeStart.run);
+      var startBtn = $('#rStartBtn'), finishBtn = $('#rFinishBtn');
+      startBtn.disabled = e.hasStart; finishBtn.disabled = !e.hasStart || e.hasFinish;
+      var txt = [];
+      if (e.hasStart) txt.push('Start: ' + (fmtClock(e.startClient) || '…') + (e.startPending ? ' (wird gesendet…)' : ''));
+      if (e.hasFinish) txt.push('Ziel: ' + (fmtClock(e.finishClient) || '…') + (e.finishPending ? ' (wird gesendet…)' : ''));
+      $('#rReadout').textContent = txt.join(' · ');
+    }
+    $('#rStartBtn').addEventListener('click', function(){
+      if (!activeStart) return;
+      queueAction('start', { boot_id:activeStart.boatId, durchlauf:activeStart.run, client_time:Date.now() });
+      refreshTimerButtons(); toast('Startzeit erfasst.');
+    });
+    $('#rFinishBtn').addEventListener('click', function(){
+      if (!activeStart) return;
+      queueAction('finish', { boot_id:activeStart.boatId, durchlauf:activeStart.run, client_time:Date.now() });
+      refreshTimerButtons(); toast('Zielzeit erfasst.');
+    });
+
+    function correctedTime(elapsedSec, ys){ return elapsedSec * ys / 1000; }
+    function fmtDuration(sec){ var m = Math.floor(sec/60); var s = (sec - m*60).toFixed(1); return m + ':' + (s.length < 4 ? '0'+s : s); }
+    function badge(n){ var cls = n===1?'gold':n===2?'silver':n===3?'bronze':''; return '<span class="badge '+cls+'">'+n+'</span>'; }
+
+    function renderAdmin(){
+      var wrap = $('#rAdminTable'); var boote = currentData.boote; var byId = {}; boote.forEach(function(b){ byId[b.id]=b; });
+      if (adminRunTab !== 'gesamt') {
+        var run = adminRunTab;
+        var rows = currentData.durchlaeufe.filter(function(r){ return r.durchlauf===run && r.start_server && r.ziel_server; })
+          .map(function(r){ var b = byId[r.boot_id]; if (!b) return null; var elapsed = (r.ziel_server - r.start_server)/1000; return { boot:b, elapsed:elapsed, corrected:correctedTime(elapsed,b.yardstick) }; })
+          .filter(Boolean).sort(function(a,b){ return a.corrected-b.corrected; });
+        if (rows.length === 0) { wrap.innerHTML = '<div class="empty">Für Durchlauf '+esc(run)+' liegen noch keine vollständigen Zeiten vor.</div>'; return; }
+        wrap.innerHTML = '<table><thead><tr><th>Platz</th><th>Boot</th><th>Typ</th><th class="num">YS</th><th class="num">Fahrzeit</th><th class="num">Wertungszeit</th></tr></thead><tbody>' +
+          rows.map(function(r,i){ return '<tr class="'+(i===0?'place-1':'')+'"><td>'+badge(i+1)+'</td><td>'+esc(r.boot.name)+'</td><td>'+esc(r.boot.typ)+'</td><td class="num">'+esc(r.boot.yardstick)+'</td><td class="num">'+fmtDuration(r.elapsed)+'</td><td class="num"><b>'+fmtDuration(r.corrected)+'</b></td></tr>'; }).join('') + '</tbody></table>';
+      } else {
+        var totals = {};
+        currentData.durchlaeufe.forEach(function(r){
+          if (!r.start_server || !r.ziel_server) return;
+          var b = byId[r.boot_id]; if (!b) return;
+          var elapsed = (r.ziel_server - r.start_server)/1000, corr = correctedTime(elapsed, b.yardstick);
+          if (!totals[r.boot_id]) totals[r.boot_id] = { boot:b, runs:0, sum:0 };
+          totals[r.boot_id].runs += 1; totals[r.boot_id].sum += corr;
+        });
+        var trows = Object.keys(totals).map(function(k){ return totals[k]; }).sort(function(a,b){ return a.sum-b.sum; });
+        if (trows.length === 0) { wrap.innerHTML = '<div class="empty">Noch keine abgeschlossenen Durchläufe.</div>'; return; }
+        wrap.innerHTML = '<table><thead><tr><th>Platz</th><th>Boot</th><th class="num">Durchläufe</th><th class="num">Summe Wertungszeit</th></tr></thead><tbody>' +
+          trows.map(function(r,i){ return '<tr class="'+(i===0?'place-1':'')+'"><td>'+badge(i+1)+'</td><td>'+esc(r.boot.name)+'</td><td class="num">'+r.runs+'</td><td class="num"><b>'+fmtDuration(r.sum)+'</b></td></tr>'; }).join('') + '</tbody></table>';
+      }
+    }
+
+    loadQueue(); saveQueue(); loadData();
+    setInterval(function(){ loadData(true); }, 6000);
+    setInterval(flushQueue, 5000);
+    window.addEventListener('online', flushQueue);
+    document.addEventListener('visibilitychange', function(){ if (!document.hidden) loadData(true); });
+  })();
+  </script>
+</body>
+</html>
